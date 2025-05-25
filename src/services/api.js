@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-const username = 'coalition';
-const password = 'skills-test';
-const baseURL = 'https://fedskillstest.coalitiontechnologies.workers.dev';
+const username = import.meta.env.VITE_API_USERNAME;
+const password = import.meta.env.VITE_API_PASSWORD;
+const baseURL = import.meta.env.VITE_API_BASE_URL;
 
 const token = btoa(`${username}:${password}`); // Encode Basic Auth
 

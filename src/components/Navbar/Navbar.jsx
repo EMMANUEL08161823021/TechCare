@@ -34,7 +34,7 @@ const Navbar = () => {
         {/* Desktop Profile */}
         <div className='hidden lg:flex items-center gap-4'>
           <div className='flex items-center gap-2'>
-            <img src='/profile.jpg' alt='profile' className='w-10 h-10 rounded-full object-cover' />
+            <img src='src/assets/senior-woman.png' alt='profile' className='w-10 h-10 rounded-full object-cover' />
             <div className='leading-tight'>
               <h3 className='font-medium text-sm'>Dr. Jose Simmons</h3>
               <p className='text-xs text-gray-500'>General Practitioner</p>
@@ -59,7 +59,7 @@ const Navbar = () => {
           </ul>
 
           <div className='flex items-center gap-3 mt-4'>
-            <img src='/profile.jpg' alt='profile' className='w-10 h-10 rounded-full object-cover' />
+            <img src='src/assets/senior-woman.png' alt='profile' className='w-10 h-10 rounded-full object-cover' />
             <div>
               <h3 className='font-medium text-sm'>Dr. Jose Simmons</h3>
               <p className='text-xs text-gray-500'>General Practitioner</p>

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react'
+import React, { useState, useEffect } from 'react';
 
 import {
   Chart as ChartJS,
@@ -14,48 +14,102 @@ import {
 import { Line } from 'react-chartjs-2';
 import { getPatients } from '../../services/api';
 
+ChartJS.register(
+  LineController,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const vitalTypes = [
+  {
+    key: "respiratory_rate",
+    title: "Respiratory Rate",
+    unit: "bpm",
+    color: "#E0F3FA",
+    img: "src/assets/respiratory.png",
+  },
+  {
+    key: "temperature",
+    title: "Temperature",
+    unit: "F",
+    color: "#FFE6E9",
+    img: "src/assets/temperature.png",
+  },
+  {
+    key: "heart_rate",
+    title: "Heart Rate",
+    unit: "bpm",
+    color: "#FFE6F1",
+    img: "src/assets/HeartBP.png",
+  },
+];
+
+
+const VitalCard = ({ title, value, levels, unit, bg, img }) => (
+  <div className="rounded-2xl overflow-hidden shadow-lg p-3" style={{ backgroundColor: bg }}>
+    <img className="w-full rounded-xl" style={{ height: '100px', width: '100px' }} src={img} alt={title} />
+    <div className="py-4">
+      <h2 className="text-sm mb-2 text-gray-800">{title}</h2>
+      <p className="text-black font-bold text-xl">{value} {unit}</p>
+      <p>{levels}</p>
+    </div>
+  </div>
+);
+
 
 const History = () => {
-
   const [patient, setPatient] = useState(null);
+  const [dataChart, setDataChart] = useState([]);
+  const [detail, setDetail] = useState([]);
+  const [pageIndex, setPageIndex] = useState(0);
+
+
+  const history = patient?.diagnosis_history || [];
+
+  const handleNext = () => {
+    if (pageIndex < history.length - 1) setPageIndex(prev => prev + 1);
+  };
+
+  const handlePrev = () => {
+    if (pageIndex > 0) setPageIndex(prev => prev - 1);
+  };
+
 
   useEffect(() => {
     getPatients()
       .then((res) => {
-        // Show only Jessica Taylor
         const data = res.data;
-        console.log(data);
-        
-        const jessica = data.find((p) => p.name === 'Jessica Taylor');
-        setPatient(jessica);
+        const jessica = data.find((p) => p.name?.toLowerCase() === 'jessica taylor');
+
+        if (jessica && Array.isArray(jessica.diagnosis_history)) {
+          setPatient(jessica);
+
+          const jessValues = jessica.diagnosis_history.map((entry) => ({
+            month: entry.month,
+            year: entry.year,
+            systolic: entry.blood_pressure?.systolic,
+            diastolic: entry.blood_pressure?.diastolic,
+          }));
+
+          setDataChart(jessValues);
+
+          const formattedChartValues = jessValues.map((value) => ({
+            systolicValues: value.systolic?.value ?? 0,
+            diastolicValues: value.diastolic?.value ?? 0,
+          }));
+
+          setDetail(formattedChartValues);
+        } else {
+          console.log("Jessica or diagnosis history not found");
+        }
       })
       .catch((err) => console.error(err));
   }, []);
-
-  // Register required Chart.js components
-  ChartJS.register(
-    LineController,
-    LineElement,
-    PointElement,
-    CategoryScale,
-    LinearScale,
-    Title,
-    Tooltip,
-    Legend
-  );
-
-  // Simulate Utils functions
-  const months = ({ count }) => {
-    const now = new Date();
-    return Array.from({ length: count }, (_, i) =>
-      new Date(now.getFullYear(), now.getMonth() - i).toLocaleString('default', { month: 'short' })
-    ).reverse();
-  };
-
-  const numbers = ({ count, min, max }) =>
-    Array.from({ length: count }, () =>
-      Math.floor(Math.random() * (max - min + 1)) + min
-    );
 
   const CHART_COLORS = {
     red: '#7E6CAB',
@@ -65,18 +119,17 @@ const History = () => {
   const transparentize = (color, opacity) =>
     color.replace('rgb', 'rgba').replace(')', `, ${opacity})`);
 
-  // Data
-  const DATA_COUNT = 7;
-  const NUMBER_CFG = { count: DATA_COUNT, min: -100, max: 100 };
-
-  const labels = months({ count: DATA_COUNT });
+  // Safely map labels and data
+  const labels = dataChart.map((entry) => `${entry.month.slice(0, 3)} '${entry.year.toString().slice(-2)}`);
+  const systolicData = detail.map((d) => d.systolicValues);
+  const diastolicData = detail.map((d) => d.diastolicValues);
 
   const data = {
     labels,
     datasets: [
       {
         label: 'Systolic',
-        data: [120, 130, 125, 140, 150, 160, 160],
+        data: systolicData,
         borderColor: CHART_COLORS.red,
         backgroundColor: transparentize(CHART_COLORS.red, 0.5),
         tension: 0.4,
@@ -84,7 +137,7 @@ const History = () => {
       },
       {
         label: 'Diastolic',
-        data: [80, 85, 82, 90, 95, 98, 100],
+        data: diastolicData,
         borderColor: CHART_COLORS.blue,
         backgroundColor: transparentize(CHART_COLORS.blue, 0.5),
         tension: 0.4,
@@ -93,20 +146,17 @@ const History = () => {
     ],
   };
 
-  // Chart options
   const options = {
     responsive: true,
     plugins: {
       tooltip: {
         callbacks: {
-          title: () => '', // Hide the default title
+          title: () => '',
           label: function (context) {
-            const { dataset } = context;
-
-            if (dataset.label === 'Systolic') {
-              return [`Systolic`, `160`, `Higher than Average`];
-            } else if (dataset.label === 'Diastolic') {
-              return [`Diastolic`, `100`, `Slightly Elevated`];
+            if (context.dataset.label === 'Systolic') {
+              return ['Systolic', `${context.raw}`, 'Higher than Average'];
+            } else if (context.dataset.label === 'Diastolic') {
+              return ['Diastolic', `${context.raw}`, 'Slightly Elevated'];
             }
             return context.label;
           },
@@ -138,12 +188,11 @@ const History = () => {
         text: 'Blood Pressure',
         align: 'start',
         font: {
-          size: 18, // increase size
-          weight: 'bold', // make it bold
+          size: 18,
+          weight: 'bold',
         },
-        color: '#000', // optional: make sure it's visible
+        color: '#000',
       },
-
     },
     scales: {
       y: {
@@ -153,64 +202,63 @@ const History = () => {
   };
 
   return (
-    <div className='history-wrapper'>
-        <div className='wrapper flex flex-col gap-4'>
-          <div className='p-3 flex flex-col gap-3 bg-white rounded-xl '>
-            <h1 className='font-bold'>Diagnosis History</h1>
-              <div className='graph flex items-start justify-between bg-[#F4F0FE] rounded-xl p-3 w-[100%]'>
-               <Line options={options} data={data} />
-              </div>
-            <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-              <div class="max-w-sm rounded-2xl overflow-hidden shadow-lg bg-[#E0F3FA] p-3">
-                <img class="w-full rounded-xl" style={{height: '100px', width: '100px'}} src="/src/assets/respiratory.png" alt="Sample image" />
-                <div class="py-4">
-                  <h2 class="text-sm mb-2 text-gray-800">Respiratory Rate</h2>
-                  <p class="text-black font-bold text-xl">
-                    20 bpm
-                  </p>
-                  <p>Normal</p>
-                </div>
-              </div>
-              <div class="max-w-sm rounded-2xl overflow-hidden shadow-lg bg-[#FFE6E9] p-3">
-                <img class="w-full rounded-xl" style={{height: '100px', width: '100px'}} src="/src/assets/temperature.png" alt="Sample image" />
-                <div class="py-4">
-                  <h2 class="text-sm mb-2 text-gray-800">Temperature</h2>
-                  <p class="text-black font-bold text-xl">
-                    98.6 F
-                  </p>
-                  <p>Normal</p>
-                </div>
-              </div>
-              <div class="max-w-sm rounded-2xl overflow-hidden shadow-lg bg-[#FFE6F1] p-3">
-                <img class="w-full rounded-xl" style={{height: '100px', width: '100px'}} src="/src/assets/HeartBP.png" alt="Sample image" />
-                <div class="py-4">
-                  <h2 class="text-sm mb-2 text-gray-800">Heart Rate</h2>
-                  <p class="text-black font-bold text-xl">
-                    78 bpm
-                  </p>
-                  <p>Normal</p>
-                </div>
-              </div>
-
-
-            </div>
+    <div className="history-wrapper">
+      <div className="wrapper flex flex-col gap-6">
+        <div className="p-3 flex flex-col gap-3 bg-white rounded-xl">
+          <h1 className="font-bold">Diagnosis History</h1>
+          <div className="graph flex items-start justify-between bg-[#F4F0FE] rounded-xl p-3 w-[100%]">
+            <Line options={options} data={data} />
           </div>
-          <div class="overflow-x-auto rounded-xl bg-white p-3">
-            <h1 className='font-bold my-2'>Diagnostic List</h1>
-            {patient && (
+          {patient?.name === "Jessica Taylor" && history.length > 0 ? (
+            <>
+              <div className="flex justify-between items-center mt-6">
+                <button onClick={handlePrev} disabled={pageIndex === 0} className="px-3 py-1 bg-gray-200 rounded">Prev</button>
+                <span className="font-bold text-gray-700">
+                  {history[pageIndex].month} {history[pageIndex].year}
+                </span>
+                <button onClick={handleNext} disabled={pageIndex === history.length - 1} className="px-3 py-1 bg-gray-200 rounded">Next</button>
+              </div>
 
-            <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
-              <thead class="bg-gray-100">
+              <div className="grid gap-6 w-[100%] grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                {vitalTypes.map(({ key, title, unit, color, img }) => {
+                  const vital = history[pageIndex][key];
+                  return vital ? (
+                    <VitalCard
+                      key={key}
+                      title={title}
+                      value={vital.value}
+                      levels={vital.levels}
+                      unit={unit}
+                      bg={color}
+                      img={img}
+                      
+                    />
+                  ) : null;
+                })}
+              </div>
+            </>
+          ) : (
+            <p className="text-red-500">No data for Jessica Taylor</p>
+          )}
+
+
+
+        </div>
+
+        <div className="overflow-x-auto rounded-xl bg-white p-3">
+          <h1 className="font-bold my-2">Diagnostic List</h1>
+          {patient && (
+            <table className="min-w-full divide-y divide-gray-200 text-sm text-left">
+              <thead className="bg-gray-100">
                 <tr>
-                  <th class="px-6 py-3 font-semibold text-gray-700">Problem/Diagnosis</th>
-                  <th class="px-6 py-3 font-semibold text-gray-700">Description</th>
-                  <th class="px-6 py-3 font-semibold text-gray-700">Status</th>
+                  <th className="px-6 py-3 font-semibold text-gray-700">Problem/Diagnosis</th>
+                  <th className="px-6 py-3 font-semibold text-gray-700">Description</th>
+                  <th className="px-6 py-3 font-semibold text-gray-700">Status</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200">
                 {patient.diagnostic_list.map((item, i) => (
-
-                  <tr>
+                  <tr key={i}>
                     <td className="px-6 py-4">{item.name}</td>
                     <td className="px-6 py-4">{item.description}</td>
                     <td className="px-6 py-4">
@@ -220,18 +268,15 @@ const History = () => {
                     </td>
                   </tr>
                 ))}
-
               </tbody>
             </table>
-            )}
-          </div>
-
-
+          )}
         </div>
-        <div style={{height: '60px'}}></div>
-
+      </div>
+      <div style={{ height: '60px' }}></div>
     </div>
-  )
-}
+  );
+};
 
-export default History
+export default History;
+
