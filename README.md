@@ -1,12 +1,26 @@
-# React + Vite
+# Patient Diagnosis Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React web application that displays the diagnosis history of patients, including blood pressure records over time, in a user-friendly and visual format.
 
-Currently, two official plugins are available:
+## 📸 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔐 Basic Authentication using credentials from environment variables.
+- 📊 Blood pressure chart visualization (systolic & diastolic) per month/year.
+- 👤 Focus on specific patient record (e.g., *Jessica Taylor*).
+- 📡 Fetches patient data from a secured remote API.
 
-## Expanding the ESLint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **React** – Frontend framework
+- **Vite** – Lightning-fast build tool
+- **Fetch API** – For HTTP requests (replacing Axios)
+- **Tailwind CSS** – For styling
+- **Chart.js / Recharts / Your preferred chart lib** – For data visualization
+
+## 🚀 Getting Started
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/EMMANUEL08161823021/TechCare.git
+npm run dev
